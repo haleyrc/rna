@@ -39,9 +39,9 @@ func runCommand(cmd string, args ...string) error {
 func newProject(t string, args ...string) error {
 	t = strings.ToLower(t)
 	switch t {
-	case "cli":
+	case "cli", "test":
 		proj := CommandLineProject{
-			TemplatePath: filepath.Join("templates", "cli"),
+			TemplatePath: filepath.Join("templates", t),
 		}
 
 		if err := proj.ParseFlags(args...); err != nil {
@@ -54,7 +54,11 @@ func newProject(t string, args ...string) error {
 
 		log.Printf("creating project: %s\n", proj.Name)
 
-		if err := proj.Build(); err != nil {
+		if err := proj.Create(); err != nil {
+			return fmt.Errorf("new project: %w", err)
+		}
+
+		if err := proj.PostCreate(); err != nil {
 			return fmt.Errorf("new project: %w", err)
 		}
 
