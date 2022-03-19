@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 )
 
 const (
@@ -16,10 +17,12 @@ const (
 )
 
 func main() {
+	start := time.Now()
 	if err := run(os.Args...); err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
+	log.Printf("completed in %s.\n", time.Since(start))
 }
 
 func run(args ...string) error {
@@ -36,36 +39,43 @@ func runCommand(cmd string, args ...string) error {
 	}
 }
 
+type ProjectTemplate interface {
+	ParseFlags(args ...string) error
+	Validate() error
+	Create() error
+	PostCreate() error
+}
+
 func newProject(t string, args ...string) error {
 	t = strings.ToLower(t)
 	switch t {
 	case "cli", "test":
-		proj := CommandLineProject{
+		return create(&CommandLineProject{
 			TemplatePath: filepath.Join("templates", t),
-		}
-
-		if err := proj.ParseFlags(args...); err != nil {
-			return fmt.Errorf("new project: %w", err)
-		}
-
-		if err := proj.Validate(); err != nil {
-			return fmt.Errorf("new project: %w", err)
-		}
-
-		log.Printf("creating project: %s\n", proj.Name)
-
-		if err := proj.Create(); err != nil {
-			return fmt.Errorf("new project: %w", err)
-		}
-
-		if err := proj.PostCreate(); err != nil {
-			return fmt.Errorf("new project: %w", err)
-		}
-
-		return nil
+		}, args...)
 	default:
 		return fmt.Errorf("invalid project type: %s", t)
 	}
+}
+
+func create(p ProjectTemplate, args ...string) error {
+	if err := p.ParseFlags(args...); err != nil {
+		return fmt.Errorf("create: %w", err)
+	}
+
+	if err := p.Validate(); err != nil {
+		return fmt.Errorf("create: %w", err)
+	}
+
+	if err := p.Create(); err != nil {
+		return fmt.Errorf("create: %w", err)
+	}
+
+	if err := p.PostCreate(); err != nil {
+		return fmt.Errorf("create: %w", err)
+	}
+
+	return nil
 }
 
 func makeRegularFile(path, newPath string) error {

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,8 +17,9 @@ type CommandLineProject struct {
 }
 
 func (clp *CommandLineProject) Create() error {
+	log.Printf("creating project: %s\n", clp.Name)
 	if err := filepath.WalkDir(clp.TemplatePath, clp.create); err != nil {
-		return fmt.Errorf("new project: %w", err)
+		return fmt.Errorf("Create: %w", err)
 	}
 	return nil
 }
